@@ -14,27 +14,27 @@ import {
   Loader2,
   CheckCircle2,
   AlertTriangle,
+  Lock,
+  UserCheck,
 } from 'lucide-react';
 import { CategoryType, PriceType } from '../types';
 import { api } from '../lib/api';
 
 export const CreateListingScreen: React.FC = () => {
-  const { addNewListing, navigateTo, user } = useApp();
+  const { addNewListing, navigateTo, user, openAuth } = useApp();
 
-  const [title, setTitle] = useState('Keychron K2 Mechanical Keyboard');
+  const [title, setTitle] = useState('');
   const [category, setCategory] = useState<CategoryType>('Resources');
   const [subcategory, setSubcategory] = useState('Electronics');
-  const [price, setPrice] = useState<number | ''>(2400);
+  const [price, setPrice] = useState<number | ''>('');
   const [priceType, setPriceType] = useState<PriceType>('fixed');
-  const [description, setDescription] = useState(
-    'Wireless mechanical keyboard with Gateron Brown switches. Mint condition, barely used for one semester. Includes original keycaps, Mac/Windows switchers, and braided USB-C cable.'
-  );
-  const [condition, setCondition] = useState('Like New');
+  const [description, setDescription] = useState('');
+  const [condition, setCondition] = useState('Good');
   const [imageUrl, setImageUrl] = useState(
     'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=800&auto=format&fit=crop&q=80'
   );
   const [tagInput, setTagInput] = useState('');
-  const [tags, setTags] = useState<string[]>(['#hardware', '#electronics', '#compsci']);
+  const [tags, setTags] = useState<string[]>(['#campus', '#exchange']);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // AI Assistant States
@@ -46,6 +46,60 @@ export const CreateListingScreen: React.FC = () => {
     reason?: string;
   } | null>(null);
   const [isModerating, setIsModerating] = useState(false);
+
+  // If user is not logged in, show sleek login required view
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-[#020617] text-slate-100 dot-grid pt-28 pb-24 flex items-center justify-center">
+        <div className="max-w-md w-full mx-auto px-4">
+          <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[36px] p-8 text-center shadow-2xl relative overflow-hidden">
+            <div className="absolute -top-16 -right-16 w-40 h-40 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-fuchsia-600/15 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="w-16 h-16 rounded-2xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center mx-auto mb-5 shadow-lg shadow-indigo-600/20">
+              <Lock className="w-8 h-8 text-indigo-400" />
+            </div>
+
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] font-mono font-bold uppercase tracking-widest text-indigo-300 mb-3">
+              <ShieldCheck className="w-3 h-3 text-green-400" />
+              <span>Authentication Required</span>
+            </div>
+
+            <h2 className="font-display text-2xl font-black text-white mb-2">
+              Sign In to Post Listings
+            </h2>
+            <p className="text-xs text-slate-400 font-body mb-6 leading-relaxed">
+              To keep the marketplace trusted and student-verified, you must sign in with your campus account before listing items, services, or opportunities.
+            </p>
+
+            <div className="space-y-3 font-mono text-xs">
+              <button
+                onClick={() => openAuth('login')}
+                className="w-full py-3.5 px-4 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-bold uppercase tracking-wider shadow-xl shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Sign In with Campus Account</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+
+              <button
+                onClick={() => openAuth('signup')}
+                className="w-full py-3 px-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-bold uppercase tracking-wider transition-all cursor-pointer"
+              >
+                Create Student Account
+              </button>
+
+              <button
+                onClick={() => navigateTo('feed')}
+                className="w-full py-2.5 text-[11px] text-slate-500 hover:text-slate-300 transition-colors cursor-pointer"
+              >
+                Browse Marketplace Feed Instead
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const sampleImagePresets = [
     {

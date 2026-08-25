@@ -7,7 +7,7 @@ import {
   CategoryType,
   ChatMessage,
 } from '../types';
-import { CURRENT_USER, INITIAL_LISTINGS, INITIAL_CONVERSATIONS } from '../data/mockData';
+import { INITIAL_LISTINGS, INITIAL_CONVERSATIONS } from '../data/mockData';
 import { api } from '../lib/api';
 
 interface AppContextType {
@@ -43,8 +43,9 @@ interface AppContextType {
   conversations: Conversation[];
   sendMessage: (conversationId: string, text: string) => Promise<void>;
   startConversationWithListing: (listing: Listing) => void;
-  user: UserProfile;
-  setUser: React.Dispatch<React.SetStateAction<UserProfile>>;
+  user: UserProfile | null;
+  setUser: React.Dispatch<React.SetStateAction<UserProfile | null>>;
+  logout: () => Promise<void>;
   isAuthModalOpen: boolean;
   authMode: 'login' | 'signup';
   openAuth: (mode?: 'login' | 'signup') => void;
@@ -65,7 +66,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | 'All'>('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
   const [selectedSubcategories, setSelectedSubcategories] = useState<string[]>([]);
-  const [maxPrice, setMaxPrice] = useState<number>(500);
+  const [maxPrice, setMaxPrice] = useState<number>(5000);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [sortBy, setSortBy] = useState<'newest' | 'price-low' | 'price-high' | 'popular'>('newest');
 
@@ -77,7 +78,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [savedListingIds, setSavedListingIds] = useState<string[]>(() => {
     const saved = localStorage.getItem('rexchange_saved_ids');
-    return saved ? JSON.parse(saved) : ['listing-1', 'listing-3'];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [conversations, setConversations] = useState<Conversation[]>(() => {
@@ -85,14 +86,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : INITIAL_CONVERSATIONS;
   });
 
-  const [user, setUser] = useState<UserProfile>(() => {
+  // No placeholder user by default on fresh visit
+  const [user, setUser] = useState<UserProfile | null>(() => {
     const saved = localStorage.getItem('rexchange_user');
-    return saved ? JSON.parse(saved) : CURRENT_USER;
+    return saved ? JSON.parse(saved) : null;
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
-  const [notificationCount, setNotificationCount] = useState(3);
+  const [notificationCount, setNotificationCount] = useState(0);
 
   // Initial backend load
   const reloadListings = useCallback(async () => {
@@ -123,7 +125,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             rating: l.seller?.rating || 4.9,
             reviewsCount: l.seller?.tradesCompleted || 10,
             verified: true,
-            isCurrentUser: l.sellerId === user.id,
+            isCurrentUser: user ? (l.sellerId === user.id) : false,
           },
           createdAt: l.createdAt || 'Recently',
           status: l.status || 'active',
@@ -134,45 +136,55 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.warn('Could not sync listings from backend API, using cached state', e);
     }
-  }, [user.id]);
+  }, [user?.id]);
 
   useEffect(() => {
     reloadListings();
   }, [reloadListings]);
 
-  // Sync user profile & notifications on start
+  // Sync user profile & notifications on start if token exists
   useEffect(() => {
+    const token = localStorage.getItem('rexchange_auth_token');
+    if (!token) return;
+
     const fetchUserData = async () => {
       try {
         const meRes = await api.auth.getMe();
         if (meRes?.user) {
           const u = meRes.user;
-          setUser((prev) => ({
-            ...prev,
+          setUser({
             id: u.id,
             name: u.name,
             email: u.email,
-            college: u.college,
-            department: u.department,
-            year: u.year,
-            bio: u.bio,
-            karmaPoints: u.karma || prev.karmaPoints,
-            rating: u.ratingAvg || prev.rating,
-            reviewsCount: u.reviewsCount || prev.reviewsCount,
-            avatar: u.avatar || prev.avatar,
-          }));
-        }
+            college: u.college || 'State University',
+            department: u.department || 'General Studies',
+            year: u.year || 'Freshman',
+            bio: u.bio || '',
+            avatar: u.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+            karmaPoints: u.karma ?? 0,
+            rating: u.ratingAvg ?? 0,
+            reviewsCount: u.reviewsCount ?? 0,
+            tradesCompleted: u.tradesCompleted ?? 0,
+            rank: (u.tradesCompleted ?? 0) > 10 ? 'Top Trader' : (u.tradesCompleted ?? 0) > 0 ? 'Active Trader' : 'New Member',
+            verified: true,
+            isCurrentUser: true,
+            badges: u.badges || [],
+          });
 
-        const notifRes = await api.notifications.get(user.id);
-        if (notifRes && notifRes.unreadCount !== undefined) {
-          setNotificationCount(notifRes.unreadCount);
+          const notifRes = await api.notifications.get(u.id);
+          if (notifRes && notifRes.unreadCount !== undefined) {
+            setNotificationCount(notifRes.unreadCount);
+          }
         }
       } catch {
-        // Fallback silently
+        // Token might be invalid or expired
+        localStorage.removeItem('rexchange_auth_token');
+        localStorage.removeItem('rexchange_user');
+        setUser(null);
       }
     };
     fetchUserData();
-  }, [user.id]);
+  }, []);
 
   // Sync to local storage
   useEffect(() => {
@@ -188,7 +200,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, [conversations]);
 
   useEffect(() => {
-    localStorage.setItem('rexchange_user', JSON.stringify(user));
+    if (user) {
+      localStorage.setItem('rexchange_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('rexchange_user');
+    }
   }, [user]);
 
   const selectedListing = listings.find((l) => l.id === selectedListingId) || null;
@@ -246,6 +262,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const toggleSaveListing = async (id: string) => {
+    if (!user) {
+      openAuth('login');
+      return;
+    }
+
     const isSaved = savedListingIds.includes(id);
     const newSaved = isSaved ? savedListingIds.filter((s) => s !== id) : [...savedListingIds, id];
     setSavedListingIds(newSaved);
@@ -262,6 +283,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const addNewListing = async (listingData: Partial<Listing>): Promise<Listing> => {
+    if (!user) {
+      openAuth('login');
+      throw new Error('Please sign in to list items on the marketplace.');
+    }
+
     const newListing: Listing = {
       id: `listing-${Date.now()}`,
       title: listingData.title || 'Untitled Listing',
@@ -296,10 +322,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
 
     setListings((prev) => [newListing, ...prev]);
-    setUser((prev) => ({
-      ...prev,
-      karmaPoints: prev.karmaPoints + 50,
-    }));
+    setUser((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        karmaPoints: (prev.karmaPoints || 0) + 50,
+      };
+    });
 
     try {
       const res = await api.listings.create({
@@ -347,6 +376,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const sendMessage = async (conversationId: string, text: string) => {
     if (!text.trim()) return;
+    if (!user) {
+      openAuth('login');
+      return;
+    }
 
     const newMsg: ChatMessage = {
       id: `msg-${Date.now()}`,
@@ -422,6 +455,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const startConversationWithListing = (listing: Listing) => {
+    if (!user) {
+      openAuth('login');
+      return;
+    }
+
     const existing = conversations.find(
       (c) => c.participant.id === listing.seller.id || c.listingContext?.id === listing.id
     );
@@ -476,8 +514,21 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setIsAuthModalOpen(false);
   };
 
+  const logout = async () => {
+    try {
+      await api.auth.logout();
+    } catch {
+      // Ignored
+    }
+    localStorage.removeItem('rexchange_user');
+    localStorage.removeItem('rexchange_auth_token');
+    setUser(null);
+    navigateTo('landing');
+  };
+
   const clearNotifications = async () => {
     setNotificationCount(0);
+    if (!user) return;
     try {
       await api.notifications.markAllRead(user.id);
     } catch {
@@ -522,6 +573,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         startConversationWithListing,
         user,
         setUser,
+        logout,
         isAuthModalOpen,
         authMode,
         openAuth,

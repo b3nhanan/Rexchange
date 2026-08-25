@@ -33,33 +33,51 @@ export const AuthModal: React.FC = () => {
           year,
         });
         if (res.user) {
-          setUser((prev) => ({
-            ...prev,
+          const newUserProfile: any = {
             id: res.user.id,
             name: res.user.name,
             email: res.user.email,
-            department: res.user.department,
-            year: res.user.year,
-            karmaPoints: res.user.karma || prev.karmaPoints,
-            avatar: res.user.avatar || prev.avatar,
-          }));
+            avatar: res.user.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
+            college: res.user.college || 'State University',
+            year: res.user.year || year || 'Freshman',
+            department: res.user.department || department || 'General Studies',
+            bio: res.user.bio || 'New student at campus marketplace.',
+            rating: 0.0,
+            reviewsCount: 0,
+            karmaPoints: 0,
+            tradesCompleted: 0,
+            rank: 'New Member',
+            verified: true,
+            isCurrentUser: true,
+            badges: [],
+          };
+          setUser(newUserProfile);
         }
       } else {
         const res = await api.auth.login({
-          email: email || 'alex.rivers@college.edu',
+          email: email || 'student@college.edu',
           password,
         });
         if (res.user) {
-          setUser((prev) => ({
-            ...prev,
+          const loggedInUser: any = {
             id: res.user.id,
             name: res.user.name,
             email: res.user.email,
-            department: res.user.department,
-            year: res.user.year,
-            karmaPoints: res.user.karma || prev.karmaPoints,
-            avatar: res.user.avatar || prev.avatar,
-          }));
+            avatar: res.user.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
+            college: res.user.college || 'State University',
+            year: res.user.year || 'Student',
+            department: res.user.department || 'General Studies',
+            bio: res.user.bio || '',
+            rating: res.user.ratingAvg ?? 0,
+            reviewsCount: res.user.reviewsCount ?? 0,
+            karmaPoints: res.user.karma ?? 0,
+            tradesCompleted: res.user.tradesCompleted ?? 0,
+            rank: (res.user.tradesCompleted ?? 0) > 10 ? 'Top Trader' : (res.user.tradesCompleted ?? 0) > 0 ? 'Active Trader' : 'New Member',
+            verified: true,
+            isCurrentUser: true,
+            badges: res.user.badges || [],
+          };
+          setUser(loggedInUser);
         }
       }
       closeAuth();
@@ -74,19 +92,31 @@ export const AuthModal: React.FC = () => {
   const handleSSO = async () => {
     setIsLoading(true);
     try {
-      const res = await api.auth.login({
+      const res = await api.auth.signup({
+        name: 'Alex Rivers',
         email: 'alex.rivers@college.edu',
+        department: 'Computer Science',
+        year: 'Senior',
       });
       if (res.user) {
-        setUser((prev) => ({
-          ...prev,
+        setUser({
           id: res.user.id,
           name: res.user.name,
           email: res.user.email,
-          department: res.user.department,
-          year: res.user.year,
-          karmaPoints: res.user.karma || prev.karmaPoints,
-        }));
+          avatar: res.user.avatar || `https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80`,
+          college: res.user.college || 'State University',
+          year: res.user.year || 'Senior',
+          department: res.user.department || 'Computer Science',
+          bio: res.user.bio || 'Campus enthusiast.',
+          rating: 0.0,
+          reviewsCount: 0,
+          karmaPoints: 0,
+          tradesCompleted: 0,
+          rank: 'New Member',
+          verified: true,
+          isCurrentUser: true,
+          badges: [],
+        });
       }
       closeAuth();
       navigateTo('feed');

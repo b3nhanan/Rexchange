@@ -298,23 +298,32 @@ export const TopNavigation: React.FC = () => {
             <ShoppingCart className="w-4 h-4" />
           </button>
 
-          {/* User Profile Avatar */}
-          <button
-            onClick={() => navigateTo('profile')}
-            className="flex items-center gap-2.5 p-1 pl-1.5 pr-3 rounded-full hover:bg-white/5 border border-white/10 backdrop-blur-md transition-all group"
-            title="View Profile"
-          >
-            <div className="w-7 h-7 rounded-full overflow-hidden border border-indigo-500/40 group-hover:border-indigo-400">
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <span className="hidden md:inline text-xs font-semibold text-slate-300">
-              {user.name.split(' ')[0]}
-            </span>
-          </button>
+          {/* User Profile Avatar or Sign In */}
+          {user ? (
+            <button
+              onClick={() => navigateTo('profile')}
+              className="flex items-center gap-2.5 p-1 pl-1.5 pr-3 rounded-full hover:bg-white/5 border border-white/10 backdrop-blur-md transition-all group cursor-pointer"
+              title="View Profile"
+            >
+              <div className="w-7 h-7 rounded-full overflow-hidden border border-indigo-500/40 group-hover:border-indigo-400">
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+              <span className="hidden md:inline text-xs font-semibold text-slate-300">
+                {user.name.split(' ')[0]}
+              </span>
+            </button>
+          ) : (
+            <button
+              onClick={() => openAuth('login')}
+              className="px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-wider bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/30 transition-all cursor-pointer"
+            >
+              Sign In
+            </button>
+          )}
 
           {/* Mobile menu toggle */}
           <button

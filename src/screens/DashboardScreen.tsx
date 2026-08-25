@@ -24,9 +24,12 @@ export const DashboardScreen: React.FC = () => {
     updateListingStatus,
     deleteListing,
     navigateTo,
+    openAuth,
   } = useApp();
 
-  const [activeTab, setActiveTab] = useState<'my_listings' | 'saved' | 'exchanges' | 'analytics'>('my_listings');
+  const [activeTab, setActiveTab] = useState<'my_listings' | 'saved' | 'exchanges' | 'analytics'>(
+    user ? 'my_listings' : 'analytics'
+  );
   const [analytics, setAnalytics] = useState<any>(null);
 
   useEffect(() => {
@@ -42,7 +45,9 @@ export const DashboardScreen: React.FC = () => {
   }, []);
 
   // User's own listings
-  const myListings = listings.filter((l) => l.seller.id === user.id || l.seller.isCurrentUser);
+  const myListings = user
+    ? listings.filter((l) => l.seller.id === user.id || l.seller.isCurrentUser)
+    : [];
 
   // Saved listings
   const savedListings = listings.filter((l) => savedListingIds.includes(l.id));
@@ -54,22 +59,46 @@ export const DashboardScreen: React.FC = () => {
           {/* Left Navigation Sidebar */}
           <aside className="w-full lg:w-72 shrink-0">
             <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[32px] p-6 sticky top-24 space-y-6 shadow-2xl">
-              {/* User Mini Profile */}
-              <div className="flex items-center gap-3.5 pb-5 border-b border-white/10">
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-500/40"
-                />
-                <div>
-                  <h3 className="font-display text-base font-bold text-white leading-tight">
-                    {user.name}
-                  </h3>
-                  <p className="font-mono text-xs text-slate-400">
-                    {user.department}
-                  </p>
+              {/* User Mini Profile or Guest Callout */}
+              {user ? (
+                <div className="flex items-center gap-3.5 pb-5 border-b border-white/10">
+                  <img
+                    src={user.avatar}
+                    alt={user.name}
+                    className="w-12 h-12 rounded-2xl object-cover border-2 border-indigo-500/40"
+                  />
+                  <div>
+                    <h3 className="font-display text-base font-bold text-white leading-tight">
+                      {user.name}
+                    </h3>
+                    <p className="font-mono text-xs text-slate-400">
+                      {user.department}
+                    </p>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="pb-5 border-b border-white/10 space-y-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 font-bold text-xs">
+                      ?
+                    </div>
+                    <div>
+                      <h3 className="font-display text-sm font-bold text-white leading-tight">
+                        Guest Visitor
+                      </h3>
+                      <p className="font-mono text-[10px] text-slate-400">
+                        Campus Network
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => openAuth('login')}
+                    className="w-full py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-bold uppercase transition-all shadow-lg shadow-indigo-600/30 cursor-pointer mt-2"
+                  >
+                    Sign In
+                  </button>
+                </div>
+              )}
 
               {/* Sidebar Navigation */}
               <nav className="space-y-2 font-mono text-xs">
@@ -193,16 +222,18 @@ export const DashboardScreen: React.FC = () => {
                 <div className="space-y-2">
                   <div className="flex items-center gap-2 font-mono text-xs text-fuchsia-300 font-bold uppercase tracking-wider">
                     <Sparkles className="w-4 h-4 text-fuchsia-400" />
-                    <span>Campus Karma Level 3</span>
+                    <span>{user ? `Campus Karma Level ${Math.floor((user.karmaPoints || 0) / 100) + 1}` : 'Campus Karma Network'}</span>
                   </div>
                   <div className="flex items-baseline gap-3">
                     <span className="font-display text-4xl font-black text-white">
-                      {user.karmaPoints}
+                      {user ? user.karmaPoints : 0}
                     </span>
                     <span className="font-mono text-xs text-indigo-300">Karma Points</span>
                   </div>
                   <p className="text-xs text-slate-400 font-body max-w-md">
-                    Ranked in the top student tier this semester. Earn +50 karma for each active listing and +40 for completed exchanges.
+                    {user
+                      ? 'Earn +50 karma for each active listing and +40 for completed exchanges across campus.'
+                      : 'Join your campus marketplace network. Earn +50 karma for listings and build your verified student reputation.'}
                   </p>
                 </div>
 
@@ -210,15 +241,24 @@ export const DashboardScreen: React.FC = () => {
                   <div className="w-full sm:w-48 bg-slate-950/80 rounded-full h-3.5 border border-white/10 overflow-hidden p-0.5">
                     <div
                       className="bg-gradient-to-r from-indigo-500 to-fuchsia-500 h-full rounded-full"
-                      style={{ width: `${Math.min(100, (user.karmaPoints / 500) * 100)}%` }}
+                      style={{ width: `${user ? Math.min(100, ((user.karmaPoints || 0) / 500) * 100) : 0}%` }}
                     />
                   </div>
-                  <button
-                    onClick={() => navigateTo('profile')}
-                    className="px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-mono text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer"
-                  >
-                    View Badges
-                  </button>
+                  {user ? (
+                    <button
+                      onClick={() => navigateTo('profile')}
+                      className="px-4 py-2.5 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 font-mono text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer"
+                    >
+                      View Badges
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => openAuth('signup')}
+                      className="px-4 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white font-mono text-xs font-semibold whitespace-nowrap transition-colors cursor-pointer shadow-lg shadow-indigo-600/30"
+                    >
+                      Join & Earn Karma
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

@@ -90,6 +90,7 @@ export interface UserProfile {
   rating: number;
   reviewsCount: number;
   karmaPoints: number;
+  tradesCompleted?: number;
   rank: string;
   verified: boolean;
   isCurrentUser?: boolean;

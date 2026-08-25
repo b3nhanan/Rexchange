@@ -80,9 +80,12 @@ authRouter.post('/logout', (req, res) => {
 authRouter.get('/me', (req, res) => {
   try {
     const authHeader = req.headers.authorization;
-    const user = db.getUserByToken(authHeader) || db.getUserById('user-1');
+    if (!authHeader) {
+      return res.status(401).json({ error: 'No authorization header provided' });
+    }
+    const user = db.getUserByToken(authHeader);
     if (!user) {
-      return res.status(401).json({ error: 'Unauthorized' });
+      return res.status(401).json({ error: 'Unauthorized or invalid token' });
     }
     return res.json({ user });
   } catch (err: any) {

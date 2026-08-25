@@ -92,11 +92,11 @@ class Database {
       id,
       avatar: data.avatar || `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
       bio: data.bio || 'New campus student ready to trade & share.',
-      karma: 50, // Welcome signup bonus
-      tradesCompleted: 0,
-      ratingAvg: 5.0,
-      reviewsCount: 0,
-      badges: [],
+      karma: 0, // Starts at 0
+      tradesCompleted: 0, // Starts at 0
+      ratingAvg: 0.0, // Starts at 0.0
+      reviewsCount: 0, // Starts at 0
+      badges: [], // Starts with 0 badges
       joinedDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
     };
 
@@ -105,8 +105,8 @@ class Database {
     this.addNotification({
       userId: id,
       title: 'Welcome to REXCHANGE! 🎓',
-      message: 'You have earned +50 starter Karma points for joining your verified campus network.',
-      type: 'karma',
+      message: 'Your campus account is ready. Explore listings or post your first campus resource.',
+      type: 'system',
     });
 
     return newUser;
