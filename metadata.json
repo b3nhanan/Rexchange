@@ -1,0 +1,6 @@
+{
+  "name": "RExchange",
+  "description": "The Premier Campus Marketplace to trade textbooks, electronics, find services, and share opportunities.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
