@@ -10,6 +10,7 @@ export const TopNavigation: React.FC = () => {
     setSearchQuery,
     user,
     openAuth,
+    notifications,
     notificationCount,
     clearNotifications,
   } = useApp();
@@ -255,35 +256,57 @@ export const TopNavigation: React.FC = () => {
             </button>
 
             {showNotificationsDropdown && (
-              <div className="absolute right-0 mt-3 w-76 bg-slate-900/90 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="absolute right-0 mt-3 w-80 bg-slate-900/95 backdrop-blur-2xl border border-white/15 rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2">
                 <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-3">
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-300 font-mono">
                     Campus Activity
                   </span>
-                  <span className="text-[10px] text-slate-500 font-mono">Mark read</span>
+                  {notifications.length > 0 && (
+                    <button
+                      onClick={() => clearNotifications()}
+                      className="text-[10px] text-slate-400 hover:text-white font-mono cursor-pointer"
+                    >
+                      Clear all
+                    </button>
+                  )}
                 </div>
-                <div className="space-y-2.5 text-xs">
-                  <div
-                    onClick={() => {
-                      navigateTo('messages');
-                      setShowNotificationsDropdown(false);
-                    }}
-                    className="p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 cursor-pointer transition-colors"
-                  >
-                    <p className="text-slate-200 font-semibold">Sarah Jenkins messaged you</p>
-                    <p className="text-slate-400 text-[11px] mt-0.5">"Yeah, I can meet at the library..."</p>
+
+                {notifications.length > 0 ? (
+                  <div className="space-y-2.5 max-h-72 overflow-y-auto no-scrollbar text-xs">
+                    {notifications.map((notif) => (
+                      <div
+                        key={notif.id}
+                        onClick={() => {
+                          if (notif.link === 'messages') navigateTo('messages');
+                          else if (notif.link === 'profile') navigateTo('profile');
+                          else if (notif.link === 'dashboard') navigateTo('dashboard');
+                          setShowNotificationsDropdown(false);
+                        }}
+                        className={`p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border transition-colors cursor-pointer ${
+                          !notif.isRead ? 'border-indigo-500/40 bg-indigo-500/5' : 'border-white/5'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <p className="text-slate-200 font-semibold text-xs">{notif.title}</p>
+                          {notif.createdAt && (
+                            <span className="text-[10px] font-mono text-slate-500">{notif.createdAt}</span>
+                          )}
+                        </div>
+                        <p className="text-slate-400 text-[11px] leading-relaxed">{notif.message}</p>
+                      </div>
+                    ))}
                   </div>
-                  <div
-                    onClick={() => {
-                      navigateTo('dashboard');
-                      setShowNotificationsDropdown(false);
-                    }}
-                    className="p-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] border border-white/5 cursor-pointer transition-colors"
-                  >
-                    <p className="text-slate-200 font-semibold">+50 Karma Points earned</p>
-                    <p className="text-slate-400 text-[11px] mt-0.5">Listing published to campus feed</p>
+                ) : (
+                  <div className="py-6 px-3 text-center">
+                    <div className="w-9 h-9 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-2.5 text-slate-400">
+                      <Bell className="w-4 h-4 text-slate-400" />
+                    </div>
+                    <p className="text-xs font-semibold text-slate-300">No new notifications</p>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-relaxed">
+                      You'll receive updates here when peers message you or interact with your listings.
+                    </p>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>

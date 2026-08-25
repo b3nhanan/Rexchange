@@ -10,6 +10,17 @@ import {
 import { INITIAL_LISTINGS, INITIAL_CONVERSATIONS } from '../data/mockData';
 import { api } from '../lib/api';
 
+export interface AppNotificationItem {
+  id: string;
+  userId?: string;
+  title: string;
+  message: string;
+  type?: 'message' | 'trade' | 'karma' | 'badge' | 'system';
+  link?: string;
+  isRead?: boolean;
+  createdAt?: string;
+}
+
 interface AppContextType {
   currentScreen: ScreenView;
   setCurrentScreen: (screen: ScreenView) => void;
@@ -51,6 +62,7 @@ interface AppContextType {
   openAuth: (mode?: 'login' | 'signup') => void;
   closeAuth: () => void;
   navigateTo: (screen: ScreenView, listingId?: string) => void;
+  notifications: AppNotificationItem[];
   notificationCount: number;
   clearNotifications: () => void;
   reloadListings: () => Promise<void>;
@@ -61,7 +73,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentScreen, setCurrentScreen] = useState<ScreenView>('landing');
   const [selectedListingId, setSelectedListingId] = useState<string | null>(null);
-  const [selectedConversationId, setSelectedConversationId] = useState<string>('conv-sarah');
+  const [selectedConversationId, setSelectedConversationId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<CategoryType | 'All'>('All');
   const [selectedSubcategory, setSelectedSubcategory] = useState<string | null>(null);
@@ -81,9 +93,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return saved ? JSON.parse(saved) : [];
   });
 
+  // Empty conversations by default for clean initial experience
   const [conversations, setConversations] = useState<Conversation[]>(() => {
     const saved = localStorage.getItem('rexchange_conversations');
-    return saved ? JSON.parse(saved) : INITIAL_CONVERSATIONS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   // No placeholder user by default on fresh visit
@@ -94,6 +107,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [notifications, setNotifications] = useState<AppNotificationItem[]>([]);
   const [notificationCount, setNotificationCount] = useState(0);
 
   // Initial backend load
@@ -172,8 +186,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           });
 
           const notifRes = await api.notifications.get(u.id);
-          if (notifRes && notifRes.unreadCount !== undefined) {
-            setNotificationCount(notifRes.unreadCount);
+          if (notifRes && notifRes.notifications) {
+            setNotifications(notifRes.notifications);
+            setNotificationCount(notifRes.unreadCount || 0);
+          } else {
+            setNotifications([]);
+            setNotificationCount(0);
           }
         }
       } catch {
@@ -522,12 +540,19 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     localStorage.removeItem('rexchange_user');
     localStorage.removeItem('rexchange_auth_token');
+    localStorage.removeItem('rexchange_conversations');
+    localStorage.removeItem('rexchange_saved_ids');
     setUser(null);
+    setConversations([]);
+    setNotifications([]);
+    setNotificationCount(0);
+    setSavedListingIds([]);
     navigateTo('landing');
   };
 
   const clearNotifications = async () => {
     setNotificationCount(0);
+    setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     if (!user) return;
     try {
       await api.notifications.markAllRead(user.id);
@@ -579,6 +604,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         openAuth,
         closeAuth,
         navigateTo,
+        notifications,
         notificationCount,
         clearNotifications,
         reloadListings,

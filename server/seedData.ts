@@ -494,38 +494,7 @@ export const INITIAL_LISTINGS: ListingRecord[] = [
   },
 ];
 
-export const INITIAL_MESSAGES: MessageRecord[] = [
-  {
-    id: 'msg-1',
-    listingId: 'list-1',
-    senderId: 'user-2',
-    receiverId: 'user-1',
-    content: 'Hey Alex! Are the Sony headphones still available? Would you consider trading for a Raspberry Pi kit or ₹3,200 cash?',
-    timestamp: 'Yesterday at 3:45 PM',
-    timestampMs: Date.now() - 86400000 + 3600000,
-    isRead: true,
-  },
-  {
-    id: 'msg-2',
-    listingId: 'list-1',
-    senderId: 'user-1',
-    receiverId: 'user-2',
-    content: 'Hey Maya! Yes, still got them. I can do ₹3,200 or take a look at the Pi kit. Can meet outside the CS library tomorrow at 2 PM.',
-    timestamp: 'Yesterday at 4:10 PM',
-    timestampMs: Date.now() - 86400000 + 5100000,
-    isRead: true,
-  },
-  {
-    id: 'msg-3',
-    listingId: 'list-2',
-    senderId: 'user-7',
-    receiverId: 'user-4',
-    content: 'Hi Sophia, does the O-Chem book have the solutions manual booklet included as well?',
-    timestamp: '2 hours ago',
-    timestampMs: Date.now() - 7200000,
-    isRead: false,
-  },
-];
+export const INITIAL_MESSAGES: MessageRecord[] = [];
 
 export const INITIAL_REVIEWS: ReviewRecord[] = [
   {
@@ -554,38 +523,4 @@ export const INITIAL_REVIEWS: ReviewRecord[] = [
   },
 ];
 
-export const INITIAL_NOTIFICATIONS: NotificationRecord[] = [
-  {
-    id: 'notif-1',
-    userId: 'user-1',
-    title: 'Trade Inquiry Received',
-    message: 'Maya Chen messaged you regarding "Sony WH-1000XM4 Noise Canceling Headphones".',
-    type: 'message',
-    link: 'messages',
-    isRead: false,
-    createdAt: '1 hour ago',
-    createdAtTimestamp: Date.now() - 3600000,
-  },
-  {
-    id: 'notif-2',
-    userId: 'user-1',
-    title: '+50 Karma Points Earned',
-    message: 'Your listing "Python Tutoring" is receiving strong campus engagement.',
-    type: 'karma',
-    link: 'dashboard',
-    isRead: true,
-    createdAt: '1 day ago',
-    createdAtTimestamp: Date.now() - 86400000,
-  },
-  {
-    id: 'notif-3',
-    userId: 'user-1',
-    title: 'Badge Unlocked: Community Beacon',
-    message: 'You have surpassed 500 karma points and established verified trust across campus.',
-    type: 'badge',
-    link: 'profile',
-    isRead: true,
-    createdAt: '3 days ago',
-    createdAtTimestamp: Date.now() - 259200000,
-  },
-];
+export const INITIAL_NOTIFICATIONS: NotificationRecord[] = [];

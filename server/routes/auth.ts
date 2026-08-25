@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { db } from '../db';
+import { db, verifyPassword } from '../db';
 
 export const authRouter = Router();
 
@@ -8,29 +8,35 @@ authRouter.post('/signup', (req, res) => {
   try {
     const { name, email, password, college, department, year, bio } = req.body;
     if (!name || !email) {
-      return res.status(400).json({ error: 'Name and email are required' });
+      return res.status(400).json({ error: 'Name and campus email are required.' });
+    }
+
+    if (!password || password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters.' });
     }
 
     const existing = db.getUserByEmail(email);
     if (existing) {
-      return res.status(409).json({ error: 'A student account with this email already exists' });
+      return res.status(409).json({ error: 'A student account with this campus email already exists.' });
     }
 
     const user = db.createUser({
       name,
       email,
-      password: password || 'password123',
+      password,
       college: college || 'State University',
       department: department || 'General Studies',
-      year: year || 'Sophomore',
-      avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80`,
+      year: year || '1st Year',
       bio: bio || 'Active campus student ready to trade resources and collaborate.',
     });
 
     const token = db.createSession(user.id);
-    return res.status(201).json({ user, token });
+    
+    // Don't expose password hash back to client
+    const { password: _, ...safeUser } = user;
+    return res.status(201).json({ user: safeUser, token });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message || 'Signup failed' });
+    return res.status(500).json({ error: err.message || 'Signup failed.' });
   }
 });
 
@@ -38,28 +44,26 @@ authRouter.post('/signup', (req, res) => {
 authRouter.post('/login', (req, res) => {
   try {
     const { email, password } = req.body;
-    if (!email) {
-      return res.status(400).json({ error: 'Email is required' });
+    if (!email || !password) {
+      return res.status(400).json({ error: 'Please provide both your campus email and password.' });
     }
 
-    let user = db.getUserByEmail(email);
-    // If not found, or demo login, try finding first user
+    const user = db.getUserByEmail(email);
     if (!user) {
-      if (email.includes('@campus.edu') || email.includes('alex')) {
-        user = db.getUserById('user-1');
-      } else {
-        return res.status(404).json({ error: 'Invalid email or student not found' });
-      }
+      return res.status(401).json({ error: 'No campus account found with this email. Please check your credentials or create a new account.' });
     }
 
-    if (!user) {
-      return res.status(401).json({ error: 'Authentication failed' });
+    // Verify salted password hash
+    const isValid = verifyPassword(password, user.password);
+    if (!isValid) {
+      return res.status(401).json({ error: 'Incorrect password. Please try again.' });
     }
 
     const token = db.createSession(user.id);
-    return res.json({ user, token });
+    const { password: _, ...safeUser } = user;
+    return res.json({ user: safeUser, token });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message || 'Login failed' });
+    return res.status(500).json({ error: err.message || 'Login failed.' });
   }
 });
 
@@ -70,9 +74,9 @@ authRouter.post('/logout', (req, res) => {
     if (authHeader) {
       db.deleteSession(authHeader);
     }
-    return res.json({ success: true, message: 'Logged out successfully' });
+    return res.json({ success: true, message: 'Logged out successfully.' });
   } catch (err: any) {
-    return res.status(500).json({ error: 'Logout failed' });
+    return res.status(500).json({ error: 'Logout failed.' });
   }
 });
 
@@ -81,14 +85,15 @@ authRouter.get('/me', (req, res) => {
   try {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-      return res.status(401).json({ error: 'No authorization header provided' });
+      return res.status(401).json({ error: 'No authorization header provided.' });
     }
     const user = db.getUserByToken(authHeader);
     if (!user) {
-      return res.status(401).json({ error: 'Unauthorized or invalid token' });
+      return res.status(401).json({ error: 'Unauthorized or invalid session.' });
     }
-    return res.json({ user });
+    const { password: _, ...safeUser } = user;
+    return res.json({ user: safeUser });
   } catch (err: any) {
-    return res.status(500).json({ error: 'Session check failed' });
+    return res.status(500).json({ error: 'Session check failed.' });
   }
 });
